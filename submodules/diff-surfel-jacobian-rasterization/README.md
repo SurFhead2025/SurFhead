@@ -1,7 +1,7 @@
-# Differential Surfel Rasterization
+# Differential Surfel Jacobian Rasterization
 
-This is the rasterization engine for the paper "2D Gaussian Splatting for  Geometrically Accurate Radiance Fields". If you can make use of it in your own research, please be so kind to cite us.
-
+This rasterization engine is based on the paper "2D Gaussian Splatting for  Geometrically Accurate Radiance Fields". This rasterizer supports Jacobian deformations of Surfels.
+<!-- 
 <section class="section" id="BibTeX">
   <div class="container is-max-desktop content">
     <h2 class="title">BibTeX</h2>
@@ -30,4 +30,4 @@ This is the rasterization engine for the paper "2D Gaussian Splatting for  Geome
       url          = {https://repo-sam.inria.fr/fungraph/3d-gaussian-splatting/}
 }</code></pre>
   </div>
-</section>
+</section> -->
