@@ -734,105 +734,11 @@ class GaussianModel:
     import torch
     from pytorch3d.ops import knn_points
 
-    def recalculate_points_laplacian(self, K=5, fill_value=1e10):
-        print('::Recalculate_points_laplacian... Wait for seconds to a single minute:: \n')
-        
-        p1 = self.get_xyz_cano.unsqueeze(0)  # (N, 1, D)
-        p2 = self.get_xyz_cano.unsqueeze(0)  # (1, N, D)
-        
-        knn_dist, knn_idx,_ = knn_points(p1, p2, K=K, return_sorted=True)
-        # breakpoint()
-        N = self.get_xyz.shape[0]
-        
-        # Step 2: 인접 행렬 생성
-        A_points = torch.zeros((N, N), dtype=torch.int, device=self.get_xyz.device)
-        row_indices = torch.arange(N, device=knn_idx.device).unsqueeze(1).expand(-1, K)
-        A_points[row_indices, knn_idx.squeeze(0)] = 1
-        
-        # 대칭화
-        A_points = A_points | A_points.T
-        
-        # Step 3: 라플라시안 행렬 계산
-        D_points = torch.diag_embed(A_points.sum(dim=-1))
-        L_points = D_points - A_points  # 라플라시안 행렬 (정규화 없음)
-        L_points = L_points / A_points.sum(dim=-1, keepdim=True)
-        self.L_points = L_points
-        # return L_points
-# 이 코드를 클래스 내의 메서드로 사용합니다.
-
-
-# 이 코드를 클래스 내의 메서드로 사용합니다.
-
-    # def recalculate_points_laplacian(self):
-        print('::Recalculate_points_laplacian... Wait for seconds to a single minute:: \n')
-        N = self.get_xyz.shape[0]
-            # face_points = 
-        face_sharing = self.flame_model.face_sharing #! M x M
-        M = face_sharing.shape[0]
-        self.A_points = torch.zeros((N, N), dtype=torch.int32)
-
-        self.A_normals = torch.zeros((N,N,3), dtype=torch.float)
-        # breakpoint()   
-        face_to_points = {i: [] for i in range(M)}
-        for point_idx, face_idx in enumerate(self.binding):
-            face_to_points[face_idx.item()].append(point_idx)
-        #! 각 face에 속한 points인덱스의 리스트
-        # NxN 매트릭스 채우기
-        # normals = self.get_normal
-        for i in range(N):
-            point_face = self.binding[i]  # 포인트 i가 속한 페이스 인덱스
-            shared_faces = torch.nonzero(face_sharing[point_face]).squeeze().tolist()
-            if isinstance(shared_faces, int):
-                shared_faces = [shared_faces]
-            shared_points = set()
-            for face in shared_faces:
-                shared_points.update(face_to_points[face])
-            # self.A_points 채우기
-            for j in shared_points:
-                self.A_points[i, j] = 1
-                # self.A_normals[i, j] = normals[i]
-        self.D_points = torch.diag_embed(self.A_points.sum(dim=-1))
-        
-        self.L_points = self.D_points - self.A_points #! points laplacian without normalization
-        self.L_points = self.L_points / self.A_points.sum(dim=-1)[...,None]
-        # breakpoint()
-        sparse_indices = self.L_points.nonzero().t()
-        sparse_values = self.L_points[self.L_points != 0].float()
-        sparse_size = self.L_points.shape
-        self.L_sparse = torch.sparse_coo_tensor(sparse_indices, sparse_values, sparse_size).cuda()
-        return self.L_sparse
-        # indices = self.A_points.nonzero().t()
-        # self.D_points = torch.diag_embed(self.A_points.sum(dim=-1))
-    
-        # A_points sparse tensor
-        
-        # values = self.A_points[self.A_points != 0].float()
-        # size = self.A_points.shape
-        # A_sparse = torch.sparse_coo_tensor(indices, values, size)
-        
-        # # D_points sparse tensor
-        # D_values = self.D_points[self.D_points != 0].float()
-        # D_sparse = torch.sparse_coo_tensor(indices, D_values, size)
-        
-        # # L_points sparse tensor
-        # L_sparse = D_sparse - A_sparse
-        
-        # # Normalize L_sparse
-        # A_sum = torch.sparse.sum(A_sparse, dim=-1).to_dense()
-        # A_sum = A_sum[..., None]  # Expand dimensions to match indices shape
-        
-        # row_indices = indices[0]
-        # normalized_values = L_sparse._values() / A_sum[row_indices]
-        
-        # self.L_points = torch.sparse_coo_tensor(indices, normalized_values, size)
-        print('::Recalculate_points_laplacian Has Done::')
-
-        # print('::Recalculate_points_laplacian Has Done!::')
 
 
     def prune_points(self, mask):
         # breakpoint()
-        if self.binding is not None: #! 이거떄매 계속 살아날수도있음
+        if self.binding is not None: 
             # make sure each face is bound to at least one point after pruning
             binding_to_prune = self.binding[mask]
             counter_prune = torch.zeros_like(self.binding_counter)
@@ -840,7 +746,7 @@ class GaussianModel:
             mask_redundant = (self.binding_counter - counter_prune) > 0
             mask[mask.clone()] = mask_redundant[binding_to_prune]
         
-        valid_points_mask = ~mask #! 살아남는 값들
+        valid_points_mask = ~mask 
         optimizable_tensors = self._prune_optimizer(valid_points_mask)
 
         self._xyz = optimizable_tensors["xyz"]
@@ -851,8 +757,8 @@ class GaussianModel:
         self._rotation = optimizable_tensors["rotation"]
         self._features_sg = optimizable_tensors["f_sg"]
         # breakpoint()
-        #! 이미 다들 0
-        self.xyz_gradient_accum = self.xyz_gradient_accum[valid_points_mask] #! 무조건 처음보다 갯수가 작아지기 때문에
+ 
+        self.xyz_gradient_accum = self.xyz_gradient_accum[valid_points_mask]
         self.xyz_gradient_accum_abs = self.xyz_gradient_accum_abs[valid_points_mask]
         self.xyz_gradient_accum_abs_max = self.xyz_gradient_accum_abs_max[valid_points_mask]
 
@@ -1067,8 +973,7 @@ class GaussianModel:
         #     killing_mask = torch.logical_not(self.tight_visibility_mask)
         #     # breakpoint()
         #     print(f'By tight: {killing_mask.sum()} / Whole: {killing_mask.shape[0]}')
-        #     self.prune_points(killing_mask) #!여기서 self.xyz_gradient_accum 사이즈가(valid) 바뀜 
-            
+        #     self.prune_points(killing_mask) 
         # grads = self.xyz_gradient_accum / self.denom
         # grads[grads.isnan()] = 0.0
         
@@ -1110,7 +1015,7 @@ class GaussianModel:
         # Q = torch.quantile(grads_abs.reshape(-1), 1 - ratio)
 
 
-        # self.densify_and_clone(grads, max_grad, extent)#! 여기서는 postfix 때문에 xyz_gradient_accum 모든값을 0으로 만듦
+        # self.densify_and_clone(grads, max_grad, extent)
         # #! 
         # self.densify_and_split(grads, max_grad, extent)#! postfix(to zero) + pruning(size)
 
@@ -1132,8 +1037,7 @@ class GaussianModel:
             # breakpoint()
        
             
-            #! 살리는게 하나도 없으면
-            #! 다 True가 되어서 다죽임
+         
        
         self.prune_points(prune_mask)
 
